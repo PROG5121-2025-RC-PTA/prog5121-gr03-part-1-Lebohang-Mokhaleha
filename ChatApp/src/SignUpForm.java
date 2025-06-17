@@ -3,7 +3,7 @@ import javax.swing.border.*;
 import java.awt.*;
 
 public class SignUpForm {
-    private JTextField usernameField, numberField;
+    private JTextField firstNameField, lastNameField, usernameField, numberField;
     private JPasswordField passwordField;
     private JButton createAccountButton;
     private JFrame frame;
@@ -12,14 +12,21 @@ public class SignUpForm {
         frame = new JFrame("Sign up to Snappy Talk");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(400, 700);
+        frame.setLocationRelativeTo(null); // Center the window
         
-        //same logo as main window
-        ImageIcon logoIcon = new ImageIcon("img/logo.png");
-        frame.setIconImage(logoIcon.getImage());
+        // Try to load logo, but don't crash if it doesn't exist
+        try {
+            ImageIcon logoIcon = new ImageIcon("img/logo.png");
+            if (logoIcon.getIconWidth() > 0) {
+                frame.setIconImage(logoIcon.getImage());
+            }
+        } catch (Exception e) {
+            System.out.println("Logo not found, using default icon");
+        }
         
         frame.setLayout(new BorderLayout());
         
-        //form setup with grid layout
+        // Form setup with grid layout
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(Color.WHITE);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -30,22 +37,32 @@ public class SignUpForm {
         Font labelFont = new Font("Segoe UI", Font.BOLD, 14);
         Font inputFont = new Font("Segoe UI", Font.PLAIN, 14);
         
-        //username input
-        usernameField = new JTextField(20);
+        // First name input
+        firstNameField = new JTextField(20);
+        gbc.gridy = 0;
+        formPanel.add(createLabeledField("First Name:", firstNameField, labelFont, inputFont), gbc);
+        
+        // Last name input
+        lastNameField = new JTextField(20);
         gbc.gridy = 1;
+        formPanel.add(createLabeledField("Last Name:", lastNameField, labelFont, inputFont), gbc);
+        
+        // Username input
+        usernameField = new JTextField(20);
+        gbc.gridy = 2;
         formPanel.add(createLabeledField("Username:", usernameField, labelFont, inputFont), gbc);
         
-        //phone number input
+        // Phone number input
         numberField = new JTextField(20);
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         formPanel.add(createLabeledField("Phone Number:", numberField, labelFont, inputFont), gbc);
         
-        //password input
+        // Password input
         passwordField = new JPasswordField(20);
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         formPanel.add(createLabeledField("Password:", passwordField, labelFont, inputFont), gbc);
         
-        //create account button
+        // Create account button
         createAccountButton = new JButton("Create Account");
         createAccountButton.setBackground(new Color(255, 105, 97));
         createAccountButton.setForeground(Color.WHITE);
@@ -54,11 +71,30 @@ public class SignUpForm {
         createAccountButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         createAccountButton.addActionListener(e -> handleSignUp());
         
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         formPanel.add(createAccountButton, gbc);
+        
+        // Add login link
+        JLabel loginLabel = new JLabel("<html><u>Already have an account? Login here</u></html>");
+        loginLabel.setForeground(new Color(0, 123, 255));
+        loginLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        loginLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                frame.dispose();
+                new LogInForm();
+            }
+        });
+        
+        gbc.gridy = 6;
+        gbc.insets = new Insets(5, 20, 15, 20);
+        formPanel.add(loginLabel, gbc);
         
         frame.add(formPanel, BorderLayout.CENTER);
         frame.setVisible(true);
+        
+        // Set focus to first name field
+        SwingUtilities.invokeLater(() -> firstNameField.requestFocusInWindow());
     }
     
     private JPanel createLabeledField(String labelText, JComponent field, Font labelFont, Font inputFont) {
@@ -76,7 +112,7 @@ public class SignUpForm {
         return panel;
     }
     
-    //custom rounded border for inputs
+    // Custom rounded border for inputs
     class RoundedBorder extends AbstractBorder {
         private final int radius;
         
@@ -99,56 +135,87 @@ public class SignUpForm {
     }
     
     private void handleSignUp() {
+        String firstName = firstNameField.getText().trim();
+        String lastName = lastNameField.getText().trim();
         String username = usernameField.getText().trim();
         String phone = numberField.getText().trim();
         String password = new String(passwordField.getPassword());
         
-        //check if username is valid
+        // Check if all fields are filled
+        if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty() || phone.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "Please fill in all fields.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Check if first name is valid (only letters)
+        if (!isValidName(firstName)) {
+            JOptionPane.showMessageDialog(frame, "First name must contain only letters.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Check if last name is valid (only letters)
+        if (!isValidName(lastName)) {
+            JOptionPane.showMessageDialog(frame, "Last name must contain only letters.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Check if username is valid
         if (!isValidUsername(username)) {
             JOptionPane.showMessageDialog(frame, "Username must be at least 3 letters and contain only letters.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
-        //check if phone number is valid
+        // Check if phone number is valid
         if (!isValidSouthAfricanPhone(phone)) {
-            JOptionPane.showMessageDialog(frame, "Enter a valid South African phone number.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame, "Enter a valid South African phone number (e.g., 0123456789, +27123456789).", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
-        //check if password is strong enough
+        // Check if password is strong enough
         if (!isValidPassword(password)) {
             JOptionPane.showMessageDialog(frame, "Password must be at least 8 characters long and include a digit, uppercase, and lowercase letter.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
-        //success message and option to start chatting
+        // Success message and option to start chatting
         int choice = JOptionPane.showConfirmDialog(frame, 
-            "Account Created Successfully!\n\nWould you like to start chatting now?", 
+            "Account Created Successfully!\n\nWelcome " + firstName + " " + lastName + "!\n\nWould you like to start chatting now?", 
             "Success", 
             JOptionPane.YES_NO_OPTION, 
             JOptionPane.INFORMATION_MESSAGE);
         
         if (choice == JOptionPane.YES_OPTION) {
-            //create user and open messages
-            User newUser = new User("User", "Name", username, phone);
+            // Create user and open messages
+            User newUser = new User(firstName, lastName, username, phone);
             frame.dispose();
-            new Messages(newUser);
+            // Use the correct class name
+            new EnhancedMessages(newUser);
         } else {
             frame.dispose();
         }
     }
     
-    //username validation - only letters, at least 3 chars
+    // Name validation - only letters
+    private boolean isValidName(String name) {
+        return name.matches("^[A-Za-z]+$") && name.length() >= 2;
+    }
+    
+    // Username validation - only letters, at least 3 chars (fixed from original 5)
     private boolean isValidUsername(String username) {
         return username.matches("^[A-Za-z]{3,}$");
     }
     
-    //south african phone number validation
+    // South African phone number validation - improved to handle more formats
     private boolean isValidSouthAfricanPhone(String phone) {
-        return phone.matches("^(\\+27|27|0)[6-8][0-9]{8}$");
+        // Remove spaces and common separators
+        phone = phone.replaceAll("[-\\s()]", "");
+        
+        // Check for valid South African phone patterns
+        return phone.matches("^(\\+27|27|0)[6-8][0-9]{8}$") || 
+               phone.matches("^0[6-8][0-9]{8}$");
     }
     
-    //password validation - 8 chars min, mixed case, digit
+    // Password validation - 8 chars min, mixed case, digit
     private boolean isValidPassword(String password) {
         return password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$");
     }
